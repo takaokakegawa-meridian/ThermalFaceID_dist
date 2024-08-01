@@ -8,7 +8,7 @@ warnings.filterwarnings("ignore")
 
 import numpy as np
 import cv2 as cv
-from homography import homographic_blend
+from homography_alignment.homography import homographic_blend
 
 # Mediaipipe facial landmark imports
 from mediapipe.tasks import python

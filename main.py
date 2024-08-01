@@ -1,4 +1,4 @@
-# import time
+#### main script to run to observe plain CV window demonstrating Facial Anti-Spoofing with thermal data.
 import argparse
 import joblib
 import os
@@ -9,7 +9,7 @@ import numpy as np
 import cv2 as cv
 import torch
 from Depth_FCN_2.FCN import DepthBasedFCN      # FCN2 model imports
-from homography import homographic_blend
+from homography_alignment.homography import homographic_blend
 
 # Mediaipipe facial landmark imports
 from mediapipe.tasks import python
