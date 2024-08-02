@@ -1,3 +1,11 @@
+"""
+File: inference.py
+Author: Takao Kakegawa
+Date: 2024
+Description: Script with all inference-related functions to compartmentalize end-to-end frame 
+             inference within one function.
+"""
+
 from typing import Tuple, Optional
 import numpy as np
 from sklearn.pipeline import Pipeline
@@ -36,6 +44,7 @@ def FC2_predict(thermalcrop: np.ndarray, rgbimg: np.ndarray, landmarkcoords: tup
   pred = SVMclf.predict(svminput.reshape(1,-1))[0]
   return True if pred == 1 else False
 
+
 ###### INFERENCE DRAWING BOUNDS ONLY WITH LANDMARKER
 def frame_inference_onlylandmarker(rgbimg: np.ndarray, thermal_frame: np.ndarray, landmarker: vision.FaceLandmarker,
                                    min_height_ratio: float, colormap: str = 'bone') -> \
@@ -65,6 +74,4 @@ def frame_inference_onlylandmarker(rgbimg: np.ndarray, thermal_frame: np.ndarray
     pass
 
   return rgbimg, thermalimg, None
-
-
 ###### INFERENCE DRAWING BOUNDS ONLY WITH LANDMARKER

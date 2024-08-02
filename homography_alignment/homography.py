@@ -1,5 +1,13 @@
+"""
+File: homography.py
+Author: Takao Kakegawa
+Date: 2024
+Description: Script with all homography related functions
+"""
+
 import cv2 as cv
 import numpy as np
+
 
 def homographic_blend(img_src: np.ndarray, img_dst: np.ndarray, M: np.ndarray) -> np.ndarray:
     """project a source image onto a destination plane homography.
@@ -13,6 +21,7 @@ def homographic_blend(img_src: np.ndarray, img_dst: np.ndarray, M: np.ndarray) -
     rows,cols, _ = img_dst.shape  
     dst = cv.warpPerspective(img_src, M, (cols, rows))
     return dst
+
 
 def homographic_blend_alpha(img_src: np.ndarray, img_dst: np.ndarray,
                             M: np.ndarray, alpha: float = 0.3) -> np.ndarray:
@@ -29,6 +38,7 @@ def homographic_blend_alpha(img_src: np.ndarray, img_dst: np.ndarray,
     dst = cv.warpPerspective(img_src, M, (cols, rows))
     overlay = cv.addWeighted(img_dst, alpha, dst, 1-alpha, 0)
     return overlay
+
 
 def homographic_blend_alpha_inv(img_src: np.ndarray, img_dst: np.ndarray,
                                 M: np.ndarray, alpha: float = 0.3) -> np.ndarray:

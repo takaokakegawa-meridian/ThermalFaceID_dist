@@ -1,4 +1,10 @@
-#### main script to run to observe plain CV window demonstrating Facial Anti-Spoofing with thermal data.
+"""
+File: main.py
+Author: Takao Kakegawa
+Date: 2024
+Description: Main script to run to observe plain CV window demonstrating Facial Anti-Spoofing with thermal data.
+"""
+
 import argparse
 import joblib
 import os

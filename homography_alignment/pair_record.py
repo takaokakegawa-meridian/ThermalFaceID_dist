@@ -1,5 +1,11 @@
-#### script collect RGB/Thermal image pairs as part of set up process to calibrate the homography matrix.
-#### this script must be executed in the root directory, i.e. at ThermalFaceID_dist level.
+"""
+File: pair_record.py
+Author: Takao Kakegawa
+Date: 2024
+Description: Script collect RGB/Thermal image pairs as part of set up process to calibrate the 
+             homography matrix. his script must be executed in the root directory, i.e. at 
+             ThermalFaceID_dist level.
+"""
 
 import sys
 import os
@@ -15,10 +21,10 @@ from senxor.filters import RollingAverageFilter
 from senxor.display import cv_render
 from stark import STARKFilter
 
-
 # modularised imports
 from processing import process_thermal_frame
 from utils import config_mi48
+
 
 rotation_map = {'90': cv.ROTATE_90_CLOCKWISE,
                 '-90': cv.ROTATE_90_COUNTERCLOCKWISE,
@@ -129,4 +135,3 @@ if __name__ == "__main__":
     # stop capture and quit
     mi48.stop()
     cv.destroyAllWindows()
-

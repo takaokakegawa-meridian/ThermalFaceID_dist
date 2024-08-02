@@ -1,5 +1,10 @@
-#### script to verify the calculated homography by displaying the overlay in a CV window.
-#### the homography matrix will be calculated, then saved into a json file 
+"""
+File: verify_homography.py
+Author: Takao Kakegawa
+Date: 2024
+Description: Script to verify the calculated homography by displaying the overlay in a CV window.
+             The homography matrix will be calculated, then saved into a json file 
+"""
 
 import os
 import traceback

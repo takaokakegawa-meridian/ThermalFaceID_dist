@@ -1,8 +1,16 @@
-# https://www.techscience.com/cmc/v68n3/42515/html
-#### script to test the potential of tracking waveform pulses via thermal imaging.
+"""
+File: wavelength_test.py
+Author: Takao Kakegawa
+Date: 2024
+Description: Script to test the potential of tracking waveform pulses via thermal imaging.
+             https://www.techscience.com/cmc/v68n3/42515/html
+"""
 
 import matplotlib.pyplot as plt
 import argparse
+import sys
+import os
+sys.path.append(os.getcwd())  
 import warnings
 warnings.filterwarnings("ignore")
 

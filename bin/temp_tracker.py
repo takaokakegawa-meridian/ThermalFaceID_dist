@@ -1,9 +1,18 @@
-#### script to view frame-by-frame temperature cut reading for detected face.
+"""
+File: temp_tracker.py
+Author: Takao Kakegawa
+Date: 2024
+Description: Script to view frame-by-frame temperature cut reading for detected face.
+             A horizontal cut is taken of the cropped face thermal frame from the nose.
+"""
 
 import matplotlib.pyplot as plt
 import argparse
 import warnings
 warnings.filterwarnings("ignore")
+import sys
+import os
+sys.path.append(os.getcwd())  
 
 import numpy as np
 import cv2 as cv
@@ -22,16 +31,9 @@ from processing import process_thermal_frame
 from utils import *
 from inference import *
 
+
 fig, ax = plt.subplots()
 line, = ax.plot([], [])
-# line_forehead, = ax.plot([], [])
-# line_lcheek, = ax.plot([], [])
-# line_rcheek, = ax.plot([], [])
-# line_nose, = ax.plot([], [])
-# line_chin, = ax.plot([], [])
-# ax.set_xlim(0, 160)  # Set x-axis limits
-# ax.set_ylim(20, 45)  # Set y-axis limits
-
 
 rotation_map = {'90': cv.ROTATE_90_CLOCKWISE,
                 '-90': cv.ROTATE_90_COUNTERCLOCKWISE,
@@ -44,7 +46,7 @@ if __name__ == "__main__":
   parser.add_argument('-webcam_id', type=int, default=0, help='Webcam ID if default detected webcam is not Logitech cam')
   parser.add_argument('-rotation', type=int, default=90, help='Rotation for webcam if needed')
   parser.add_argument('-confidence', type=int, default=0.7, help='facial landmark detection confidence threshold')
-  parser.add_argument('-height_ratio', type=float, default=0.7, help='minimum height ratio of frame for face to occupy')
+  parser.add_argument('-height_ratio', type=float, default=0.75, help='minimum height ratio of frame for face to occupy')
   args = parser.parse_args()
   webcam_id = args.webcam_id
   min_height_ratio = args.height_ratio
@@ -86,7 +88,7 @@ if __name__ == "__main__":
   
   RSCALE = 2
   
-  firstbenchmarkcoords = [14,49,279,4,
+  firstbenchmarkcoords = [14,49,279,4,              
                           62,104,65,52,51,64,       # BLUE SIDE EYEBROW
                           295,333,292,294,281,282   # GREEN SIDE EYEBROW
                           ]
@@ -134,14 +136,6 @@ if __name__ == "__main__":
         # getting the crops:
         rgbcrop = rgbimg[ymin:ymax,xmin:xmax]
         thermalcrop = thermal_frame[ymin:ymax,xmin:xmax]
-
-        # # Update the line plot
-        # xx = range(thermalcrop.shape[0])
-        # yy = thermalcrop[:,x_coords[3]]
-        # line.set_data(xx, yy)
-        # ax.set_title(f"std: {np.std(yy/np.max(yy))}")
-        # ax.draw_artist(ax.patch)
-        # ax.draw_artist(line)
 
         # Update histogram plot
         ax.clear()

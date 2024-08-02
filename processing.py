@@ -1,3 +1,10 @@
+"""
+File: processing.py
+Author: Takao Kakegawa
+Date: 2024
+Description: Script with all visual/thermal image processing related functions
+"""
+
 import numpy as np
 import cv2 as cv
 

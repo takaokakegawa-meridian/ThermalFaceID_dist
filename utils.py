@@ -1,3 +1,10 @@
+"""
+File: utils.py
+Author: Takao Kakegawa
+Date: 2024
+Description: Script utility functions for general purpose of setting up mi48, to simple calculations.
+"""
+
 from senxor.utils import connect_senxor
 from senxor.mi48 import MI48
 import numpy as np
@@ -21,6 +28,7 @@ def config_mi48(params: dict) -> MI48:
     mi48.set_sens_factor(params['emissivity'])
   return mi48
 
+
 def euclid_distance(x1: float, y1: float, x2: float, y2: float) -> float:
   """calculate euclidean distance between two points (x1, y1) and (x2, y2)
   Args:
@@ -32,6 +40,7 @@ def euclid_distance(x1: float, y1: float, x2: float, y2: float) -> float:
     float: euclidean distance between two points
   """
   return ((x1-x2)**2 + (y1-y2)**2) ** 0.5
+
 
 def calculate_gamma(x_coords: np.ndarray, y_coords: np.ndarray, thermalcrop: np.ndarray) -> float:
   """calculate 'wavelength beat' for given frame.

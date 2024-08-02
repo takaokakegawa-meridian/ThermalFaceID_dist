@@ -1,12 +1,18 @@
-#### this script is to enable streaming of the created/saved pair images.
-#### you will need a separate excel sheet open to input the values as you stream images
-#### the empty excel spreadsheet template is included in the repository
+"""
+File: pair_stream_calculate.py
+Author: Takao Kakegawa
+Date: 2024
+Description: Script is to enable streaming of the created/saved pair images.
+             You will need a separate excel sheet open to input the values as you stream images.
+             The empty excel spreadsheet template is included in the repository
+"""
 
 import os
 import traceback
 import argparse
 import cv2 as cv
 import matplotlib.pyplot as plt
+
 
 def view_display(thermal_root: str, webcam_root: str, filename: str) -> None:
     """function to display the thermal/visual image pair in a single matplotlib window.
