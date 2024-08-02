@@ -1,3 +1,12 @@
+"""
+File: FCN.py
+Author: Takao Kakegawa
+Date: 2024
+Description: Script with all classes and intermediate functions to handle train/val/test
+             data. Additionally, there the training script that can be used for retraining
+             purposes.
+"""
+
 import copy
 import json
 import os
@@ -14,7 +23,6 @@ import torch.nn.functional as F
 import torch.optim as optim
 
 
-# 3.2: Depth-based CNN
 ## Depth FCN independent to input shape (3,H,W). 
 class DepthBasedFCN(nn.Module):
     """class for Depth-based Fully Convolutional Network (FCN) model object.
@@ -163,6 +171,7 @@ class FCN_Dataset(Dataset):
         assert landmarks.shape[0] == thermal_vals.shape[0], "mismatch with number of landmarks"
         return thermal_vals, rgb_img, rgb_shape, landmarks
 
+
 def my_collate(batch: List[tuple]) -> list[torch.Tensor, List, List, List]:
     """ Collate a batch of data into separate lists for thermal values, RGB images, RGB shapes, and landmarks.
     Args:
@@ -181,7 +190,6 @@ def my_collate(batch: List[tuple]) -> list[torch.Tensor, List, List, List]:
     landmarks = [item[3] for item in batch]
     return [thermal_val, rgb_img, rgb_shape, landmarks]
 
-# thermal_val is torch.Tensor, rgb_img is list, rgb_shape is list, landmarks is list
 
 def pad_tensors(tensor_lst: List[torch.Tensor]) -> torch.Tensor:
     """function that pads a list of 2D tensors to all have the same size for batch-wise loss calculation
