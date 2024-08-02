@@ -30,9 +30,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Argument Parser for Webcam ID and Rotation')
     parser.add_argument('-webcam_id', type=int, default=0, help='Webcam ID if default detected webcam is not Logitech cam')
     parser.add_argument('-rotation', type=int, default=90, help='Rotation for webcam if needed')
+    parser.add_argument('-colormap', type=str, default="inferno", help='Thermal image colormap')
     args = parser.parse_args()
     webcam_id = args.webcam_id
     rotation = rotation_map.get(str(args.rotation), None)
+    cmap = args.colormap
 
     #### create/find save root for both thermal/visual images.
     saveroot = os.path.join(os.getcwd(),'homography_sampleset')
@@ -82,21 +84,24 @@ if __name__ == "__main__":
                 rgbimg = np.fliplr(cv.rotate(rgbframe, rotation))[125:605,:]
                 thermal_raw = process_thermal_frame(data, ncols, nrows, minav, maxav,
                                                     minav2, maxav2, frame_filter)
-                thermal_frame = thermal_raw[:113,26:128]    # thermal and projected rgb have same dimensions (113, 102)
+                # thermal_frame = thermal_raw[:113,26:128]    # thermal and projected rgb have same dimensions (113, 102)
+                thermal_frame = thermal_raw[:,20:-20]
                 thermalimg = cv_render(remap(thermal_frame),
                                        resize=(int(thermal_frame.shape[1]),int(thermal_frame.shape[0])),
-                                       colormap='rainbow2',
+                                       colormap=cmap,
                                        interpolation=cv.INTER_NEAREST_EXACT,
                                        display=False)
-            
+
                 cv.imshow("Visual Image",rgbimg)
-                cv.imshow("Thermal Image",thermalimg)
+                cv.imshow("Thermal Image",cv.resize(thermalimg, dsize=rgbimg.shape[:2],
+                                                    interpolation=cv.INTER_CUBIC))
+                print(f"shapes: {thermalimg.shape}, {rgbimg.shape}")
                 
                 if save_imgs == True:
                     savename = get_default_outfile()
-                    cv.imwrite(os.path.join(os.path.join(saveroot,'thermal'), f"thermal_{savename}"),
-                            rgbimg)
-                    cv.imwrite(os.path.join(os.path.join(saveroot,'visual'), f"visual_{savename}"),
+                    cv.imwrite(os.path.join(os.path.join(saveroot,'thermal'), savename),
+                            thermalimg)
+                    cv.imwrite(os.path.join(os.path.join(saveroot,'visual'), savename),
                             rgbimg)
 
             else:

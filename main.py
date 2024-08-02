@@ -2,6 +2,7 @@
 import argparse
 import joblib
 import os
+import json
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -36,10 +37,10 @@ if __name__ == "__main__":
   parser = argparse.ArgumentParser(description='Argument Parser for Webcam ID and Rotation')
   parser.add_argument('-webcam_id', type=int, default=0, help='Webcam ID if default detected webcam is not Logitech cam')
   parser.add_argument('-rotation', type=int, default=90, help='Rotation for webcam if needed')
-  parser.add_argument('-height_ratio', type=float, default=0.77, help='minimum height ratio of frame for face to occupy')
+  parser.add_argument('-height_ratio', type=float, default=0.75, help='minimum height ratio of frame for face to occupy')
   parser.add_argument('-face_confidence', type=int, default=0.7, help='facial landmark detection confidence threshold')
   parser.add_argument('-liveness_threshold', type=float, default=0.04, help='liveness threshold')
-  parser.add_argument('-heat_threshold', type=float, default=1.8, help='thermal face variation threshold')
+  parser.add_argument('-heat_threshold', type=float, default=1.5, help='thermal face variation threshold')
   args = parser.parse_args()
   webcam_id = args.webcam_id
   min_height_ratio = args.height_ratio
@@ -87,9 +88,9 @@ if __name__ == "__main__":
   ####
 
   #### HOMOGRAPHY MATRIX HERE:
-  local_M_120120 = np.array([[ 2.88807358e-01,  4.71680005e-02, -1.23089966e+01],
-                             [-6.03625342e-03,  3.35243264e-01, -1.77408347e+00],
-                             [-4.91781884e-06,  7.87303985e-04,  1.00000000e+00]])
+  with open('homography_alignment/homographymatrix.json', "r") as f:
+    local_M_120120 = json.load(f)
+    local_M_120120 = np.array(local_M_120120['matrix']).astype(np.float64)
   
   RSCALE = 2
   ####
@@ -104,10 +105,10 @@ if __name__ == "__main__":
     data, _ = mi48.read()
     if ret and data is not None:
       rgbimg = np.fliplr(cv.rotate(rgbframe, rotation))[125:605,:]
-      rgbimg = homographic_blend(rgbimg.copy(), empty_frame, local_M_120120)[:113,6:108]    # HOMOGRAPHY STEP HERE TO PROJECT RGB ONTO THERMAL PLANE
+      rgbimg = homographic_blend(rgbimg.copy(), empty_frame, local_M_120120)[:,:]    # HOMOGRAPHY STEP HERE TO PROJECT RGB ONTO THERMAL PLANE
       thermal_raw = process_thermal_frame(data, ncols, nrows, minav, maxav,
                                           minav2, maxav2, frame_filter)
-      thermal_frame = thermal_raw[:113,26:128]    # thermal and projected rgb have same dimensions (113, 102)
+      thermal_frame = thermal_raw[:,20:-20][:,:]    # thermal and projected rgb have same dimensions (113, 102)
       rgbimg, thermalimg, landmarks = frame_inference_onlylandmarker(rgbimg, thermal_frame, landmarker, min_height_ratio, 'jet')  # inference here
 
       if landmarks is not None:
