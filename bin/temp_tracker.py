@@ -6,14 +6,17 @@ Description: Script to view frame-by-frame temperature cut reading for detected 
              A horizontal cut is taken of the cropped face thermal frame from the nose.
 """
 
-import matplotlib.pyplot as plt
+import ast
 import argparse
 import warnings
 warnings.filterwarnings("ignore")
 import sys
 import os
-sys.path.append(os.getcwd())  
+sys.path.append(os.getcwd())
+import json
+import tomllib  
 
+import matplotlib.pyplot as plt
 import numpy as np
 import cv2 as cv
 from homography_alignment.homography import homographic_blend
@@ -39,14 +42,19 @@ rotation_map = {'90': cv.ROTATE_90_CLOCKWISE,
                 '-90': cv.ROTATE_90_COUNTERCLOCKWISE,
                 '180': cv.ROTATE_180}
 
+with open("config.toml", "rb") as f:
+  config = tomllib.load(f)
 
 if __name__ == "__main__":
   #### Create the argument parser
+  default_params = config['tool']['model_params']
+  
   parser = argparse.ArgumentParser(description='Argument Parser for Webcam ID and Rotation')
-  parser.add_argument('-webcam_id', type=int, default=0, help='Webcam ID if default detected webcam is not Logitech cam')
-  parser.add_argument('-rotation', type=int, default=90, help='Rotation for webcam if needed')
-  parser.add_argument('-confidence', type=int, default=0.7, help='facial landmark detection confidence threshold')
-  parser.add_argument('-height_ratio', type=float, default=0.75, help='minimum height ratio of frame for face to occupy')
+  parser.add_argument('-webcam_id', type=int, default=default_params['webcam_id'], help='Webcam ID if default detected webcam is not Logitech cam')
+  parser.add_argument('-rotation', type=int, default=default_params['rotation'], help='Rotation for webcam if needed')
+  parser.add_argument('-height_ratio', type=float, default=default_params['height_ratio'], help='minimum height ratio of frame for face to occupy')
+  parser.add_argument('-face_confidence', type=int, default=default_params['face_confidence'], help='facial landmark detection confidence threshold')
+  
   args = parser.parse_args()
   webcam_id = args.webcam_id
   min_height_ratio = args.height_ratio
@@ -57,16 +65,17 @@ if __name__ == "__main__":
   landmarkoptions = vision.FaceLandmarkerOptions(base_options=python.BaseOptions(model_asset_path='mediapipe_models/face_landmarker_v2_with_blendshapes.task'),
                                                  output_face_blendshapes=True,
                                                  output_facial_transformation_matrixes=True,
+                                                 min_face_presence_confidence=args.face_confidence,
                                                  num_faces=1)
   landmarker = vision.FaceLandmarker.create_from_options(landmarkoptions)
   ####
 
   #### start visual webcam and SenXor thermal cam
   cam = cv.VideoCapture(webcam_id)
-  params = {'regwrite': [(0xB4, 0x03), (0xD0, 0x00),(0x30, 0x00), (0x25, 0x00)],
-            'sens_factor': 95,'offset_corr': 1.5,'emissivity': 97}
 
-  mi48 = config_mi48(params)
+  mi48_params = config['tool']['mi48_params']
+  mi48_params['regwrite'] = [ast.literal_eval(i) for i in mi48_params['regwrite']]
+  mi48 = config_mi48(mi48_params)
   ncols, nrows = mi48.fpa_shape
   mi48.start(stream=True, with_header=True)
   ####
@@ -77,14 +86,15 @@ if __name__ == "__main__":
   minav2 = RollingAverageFilter(N=15)
   maxav2 = RollingAverageFilter(N=8)
 
-  frame_filter = STARKFilter({'sigmoid': 'sigmoid','lm_atype': 'ra','lm_ks': (3,3),
-                              'lm_ad': 6,'alpha': 2.0,'beta': 2.0,})
+  stark_params = config['tool']['stark_params']
+  stark_params['lm_ks'] = ast.literal_eval(stark_params['lm_ks'])
+  frame_filter = STARKFilter(stark_params)
   ####
 
   #### HOMOGRAPHY MATRIX HERE:
-  local_M_120120 = np.array([[ 2.88807358e-01,  4.71680005e-02, -1.23089966e+01],
-                             [-6.03625342e-03,  3.35243264e-01, -1.77408347e+00],
-                             [-4.91781884e-06,  7.87303985e-04,  1.00000000e+00]])
+  with open('homography_alignment/homographymatrix.json', "r") as f:
+    local_M_120120 = json.load(f)
+    local_M_120120 = np.array(local_M_120120['matrix']).astype(np.float64)
   
   RSCALE = 2
   

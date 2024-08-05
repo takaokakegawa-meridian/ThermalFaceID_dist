@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "my_package"
+authors = [
+    {name = "Takao Kakegawa", email = "takao.kakegawa@meridianinno.com"}
+]
+date = 2024-08-05
+description = "Thermal Face-ID Deep Learning Model framework"
+version = "2.0.0"
+readme = "README.md"
+requires-python = ">=3.9"
+dynamic = ["dependencies"]
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
+
+[tool.model_params]
+webcam_id = 0
+rotation = 90
+height_ratio = 0.75
+face_confidence = 0.7
+liveness_threshold = 0.04
+heat_threshold = 1.5
+
+[tool.mi48_params]
+regwrite = ["(0xB4, 0x03)", "(0xD0, 0x00)", "(0x30, 0x00)", "(0x25, 0x00)"]
+sens_factor = 95
+offset_corr = 1.5
+emissivity = 97
+
+[tool.stark_params]
+sigmoid = "sigmoid"
+lm_atype = "ra"
+lm_ks = "(3,3)"
+lm_ad = 6
+alpha = 2.0
+beta = 2.0

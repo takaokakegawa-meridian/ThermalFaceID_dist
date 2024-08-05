@@ -5,10 +5,12 @@ Date: 2024
 Description: Main script to run to observe plain CV window demonstrating Facial Anti-Spoofing with thermal data.
 """
 
+import ast
 import argparse
 import joblib
 import os
 import json
+import tomllib
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -37,16 +39,20 @@ rotation_map = {'90': cv.ROTATE_90_CLOCKWISE,
                 '-90': cv.ROTATE_90_COUNTERCLOCKWISE,
                 '180': cv.ROTATE_180}
 
+with open("config.toml", "rb") as f:
+  config = tomllib.load(f)
 
 if __name__ == "__main__":
   #### Create the argument parser
+  default_params = config['tool']['model_params']
+  
   parser = argparse.ArgumentParser(description='Argument Parser for Webcam ID and Rotation')
-  parser.add_argument('-webcam_id', type=int, default=0, help='Webcam ID if default detected webcam is not Logitech cam')
-  parser.add_argument('-rotation', type=int, default=90, help='Rotation for webcam if needed')
-  parser.add_argument('-height_ratio', type=float, default=0.75, help='minimum height ratio of frame for face to occupy')
-  parser.add_argument('-face_confidence', type=int, default=0.7, help='facial landmark detection confidence threshold')
-  parser.add_argument('-liveness_threshold', type=float, default=0.04, help='liveness threshold')
-  parser.add_argument('-heat_threshold', type=float, default=1.5, help='thermal face variation threshold')
+  parser.add_argument('-webcam_id', type=int, default=default_params['webcam_id'], help='Webcam ID if default detected webcam is not Logitech cam')
+  parser.add_argument('-rotation', type=int, default=default_params['rotation'], help='Rotation for webcam if needed')
+  parser.add_argument('-height_ratio', type=float, default=default_params['height_ratio'], help='minimum height ratio of frame for face to occupy')
+  parser.add_argument('-face_confidence', type=int, default=default_params['face_confidence'], help='facial landmark detection confidence threshold')
+  parser.add_argument('-liveness_threshold', type=float, default=default_params['liveness_threshold'], help='liveness threshold')
+  parser.add_argument('-heat_threshold', type=float, default=default_params['heat_threshold'], help='thermal face variation threshold')
   args = parser.parse_args()
   webcam_id = args.webcam_id
   min_height_ratio = args.height_ratio
@@ -75,10 +81,10 @@ if __name__ == "__main__":
 
   #### start visual webcam and SenXor thermal cam
   cam = cv.VideoCapture(webcam_id)
-  params = {'regwrite': [(0xB4, 0x03), (0xD0, 0x00),(0x30, 0x00), (0x25, 0x00)],
-            'sens_factor': 95,'offset_corr': 1.5,'emissivity': 97}
-
-  mi48 = config_mi48(params)
+  
+  mi48_params = config['tool']['mi48_params']
+  mi48_params['regwrite'] = [ast.literal_eval(i) for i in mi48_params['regwrite']]
+  mi48 = config_mi48(mi48_params)
   ncols, nrows = mi48.fpa_shape
   mi48.start(stream=True, with_header=True)
   ####
@@ -89,8 +95,9 @@ if __name__ == "__main__":
   minav2 = RollingAverageFilter(N=15)
   maxav2 = RollingAverageFilter(N=8)
 
-  frame_filter = STARKFilter({'sigmoid': 'sigmoid','lm_atype': 'ra','lm_ks': (3,3),
-                              'lm_ad': 6,'alpha': 2.0,'beta': 2.0,})
+  stark_params = config['tool']['stark_params']
+  stark_params['lm_ks'] = ast.literal_eval(stark_params['lm_ks'])
+  frame_filter = STARKFilter(stark_params)
   ####
 
   #### HOMOGRAPHY MATRIX HERE:
