@@ -24,13 +24,13 @@ from mediapipe.tasks.python import vision
 
 # SenXor imports
 from senxor.filters import RollingAverageFilter
-from stark import STARKFilter
+from thermalfaceid.stark import STARKFilter
 
 
 # modularised imports
-from processing import *
-from utils import *
-from inference import *
+from thermalfaceid.processing import *
+from thermalfaceid.utils import *
+from thermalfaceid.inference import *
 
 
 rotation_map = {'90': cv.ROTATE_90_CLOCKWISE,

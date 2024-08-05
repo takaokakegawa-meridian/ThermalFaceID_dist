@@ -17,7 +17,7 @@ from senxor.utils import remap
 from senxor.display import cv_render
 
 from Depth_FCN_2.FCN import DepthBasedFCN
-from processing import *
+from thermalfaceid.processing import *
 
 
 def FC2_predict(thermalcrop: np.ndarray, rgbimg: np.ndarray, landmarkcoords: tuple,

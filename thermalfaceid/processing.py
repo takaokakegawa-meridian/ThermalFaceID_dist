@@ -15,7 +15,7 @@ from mediapipe.tasks.python import vision
 
 from senxor.utils import data_to_frame
 from senxor.filters import RollingAverageFilter
-from stark import STARKFilter
+from thermalfaceid.stark import STARKFilter
 
 
 def convert_bgr_cnn_input(bgr_frame: np.ndarray) -> np.ndarray:
