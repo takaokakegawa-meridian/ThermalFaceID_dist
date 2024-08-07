@@ -1,5 +1,5 @@
 """
-File: utils.py
+File: thermalfaceid/utils.py
 Author: Takao Kakegawa
 Date: 2024
 Description: Script utility functions for general purpose of setting up mi48, to simple calculations.

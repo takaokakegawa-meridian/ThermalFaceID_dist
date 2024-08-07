@@ -1,5 +1,5 @@
 """
-File: inference.py
+File: thermalfaceid/inference.py
 Author: Takao Kakegawa
 Date: 2024
 Description: Script with all inference-related functions to compartmentalize end-to-end frame 

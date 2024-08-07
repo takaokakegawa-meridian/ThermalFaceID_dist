@@ -18,7 +18,6 @@ import numpy as np
 import cv2 as cv
 import torch
 from Depth_FCN_2.FCN import DepthBasedFCN      # FCN2 model imports
-from homography_alignment.homography import homographic_blend
 
 # Mediaipipe facial landmark imports
 from mediapipe.tasks import python
@@ -28,8 +27,8 @@ from mediapipe.tasks.python import vision
 from senxor.filters import RollingAverageFilter
 from thermalfaceid.stark import STARKFilter
 
-
 # modularised imports
+from homography_alignment.homography import homographic_blend
 from thermalfaceid.processing import *
 from thermalfaceid.utils import *
 from thermalfaceid.inference import *

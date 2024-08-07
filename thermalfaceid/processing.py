@@ -1,5 +1,5 @@
 """
-File: processing.py
+File: thermalfaceid/processing.py
 Author: Takao Kakegawa
 Date: 2024
 Description: Script with all visual/thermal image processing related functions

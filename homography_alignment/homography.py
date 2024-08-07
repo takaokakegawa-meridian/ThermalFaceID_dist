@@ -1,5 +1,5 @@
 """
-File: homography.py
+File: homography_alignment/homography.py
 Author: Takao Kakegawa
 Date: 2024
 Description: Script with all homography related functions

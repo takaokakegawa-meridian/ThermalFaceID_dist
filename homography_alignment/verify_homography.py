@@ -1,5 +1,5 @@
 """
-File: verify_homography.py
+File: homography_alignment/verify_homography.py
 Author: Takao Kakegawa
 Date: 2024
 Description: Script to verify the calculated homography by displaying the overlay in a CV window.

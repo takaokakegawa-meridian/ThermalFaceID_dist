@@ -1,5 +1,5 @@
 """
-File: val_collect.py
+File: val_procedure/val_collect.py
 Author: Takao Kakegawa
 Date: 2024
 Description: Main script to run to observe plain CV window demonstrating Facial Anti-Spoofing with thermal data.
@@ -8,7 +8,6 @@ Description: Main script to run to observe plain CV window demonstrating Facial 
 import ast
 import argparse
 import os
-import shutil
 import sys
 sys.path.append(os.getcwd())
 import json
@@ -18,8 +17,6 @@ warnings.filterwarnings("ignore")
 
 import numpy as np
 import cv2 as cv
-from utils import create_folders
-from homography_alignment.homography import homographic_blend
 
 # Mediaipipe facial landmark imports
 from mediapipe.tasks import python
@@ -29,8 +26,9 @@ from mediapipe.tasks.python import vision
 from senxor.filters import RollingAverageFilter
 from thermalfaceid.stark import STARKFilter
 
-
 # modularised imports
+from utils import *
+from homography_alignment.homography import homographic_blend
 from thermalfaceid.processing import *
 from thermalfaceid.inference import frame_inference_onlylandmarker
 from thermalfaceid.utils import *
@@ -96,29 +94,30 @@ if __name__ == "__main__":
   ####
 
   #### HOMOGRAPHY MATRIX HERE:
-  # with open('homography_alignment/homographymatrix.json', "r") as f:
-  #   local_M_120120 = json.load(f)
-  #   local_M_120120 = np.array(local_M_120120['matrix']).astype(np.float64)
-  local_M_120120 = np.array([[ 2.88807358e-01,  4.71680005e-02, -1.23089966e+01],
-                             [-6.03625342e-03,  3.35243264e-01, -1.77408347e+00],
-                             [-4.91781884e-06,  7.87303985e-04,  1.00000000e+00]])
+  with open('homography_alignment/homographymatrix.json', "r") as f:
+    local_M_120120 = json.load(f)
+    local_M_120120 = np.array(local_M_120120['matrix']).astype(np.float64)
   
   RSCALE = 2
   ####
+
+  #### forming validation data directory
+  ret, rgbframe = cam.read()
+  data, _ = mi48.read()
+  if ret and data is not None:
+    desktop_path = os.path.join(os.path.expanduser('~'), 'Desktop')
+    target_dir = os.path.join(desktop_path, 'thermalfaceid_val')
+    save_dir = os.path.join(target_dir, "real") if class_arg == 1 else os.path.join(target_dir, "fake")
+    create_folders(target_dir)
+  else:
+    sys.exit("Connection issue with MI48 and/or visual camera.")
+  ####
+
   winName = "Display"
   cv.namedWindow(winName)
 
   empty_frame = np.zeros((120,120,3))
-
-  ret, rgbframe = cam.read()
-  data, _ = mi48.read()
-
-  #### forming validation data directory
-  if ret and data is not None:
-    desktop_path = os.path.join(os.path.expanduser('~'), 'Desktop')
-    target_dir = os.path.join(desktop_path, 'thermalfaceid_val')
-    create_folders(target_dir)
-  ####
+  save_data = False
 
   while True:
     pred = None
@@ -161,27 +160,16 @@ if __name__ == "__main__":
         for x,y in zip(x_coordsbig, y_coordsbig):
           thermalimgbig = cv.circle(thermalimgbig, (x,y), 1, (0,0,0), -1)   # verify that the points project correctly.
         
-        yy = thermalcrop[y_coords[4],:]   # thermal horizontal cut from nose landmark point
+        rgbimgbig = cv.rectangle(rgbimgbig, (xminbig, yminbig), (xmaxbig, ymaxbig), (255, 0, 0), 1)
 
-        if np.std(yy/np.max(yy)) > liveness_threshold and \
-        np.std(thermalcrop.flatten().astype(np.float32)) > heat_threshold:
-          pred = FC2_predict(thermalcrop, rgbcrop, (x_coords, y_coords), model, SVMclf)
-          if pred:
-            color = (0, 255, 0)
-            winTitle = "REAL"
-          else:
-            color = (0, 0, 255)
-            winTitle = "SPOOF"
-          rgbimgbig = cv.rectangle(rgbimgbig, (xminbig, yminbig), (xmaxbig, ymaxbig), color, 1)
-        else:
-          rgbimgbig = cv.rectangle(rgbimgbig, (xminbig, yminbig), (xmaxbig, ymaxbig), (0, 0, 255), 1)
+        if save_data:   # saving data: saving thermalcrop, rgbcrop and landmarkcoords
+          save_val_data(save_dir, x_coords, y_coords, rgbcrop, thermalcrop)
 
       else:
         rgbimgbig = cv.resize(rgbimg, dsize=None, fx=RSCALE, fy=RSCALE)
         thermalimgbig = cv.resize(thermalimg, dsize=None, fx=RSCALE, fy=RSCALE)
 
     cv.imshow(winName, np.vstack((rgbimgbig, thermalimgbig)))
-    cv.setWindowTitle(winName, winTitle)
 
     key = cv.waitKey(1)
     if key == ord("q"):
@@ -194,5 +182,13 @@ if __name__ == "__main__":
         if key == ord("r"):
           print("Resumed...")
           break
+    elif key == ord("m"):
+      save_data = True
+      print("Save images ENABLED")
+    elif key == ord("n"):
+      save_data = False
+      print("Save images DISABLED")
 
+
+  mi48.stop()
   cv.destroyAllWindows()

@@ -1,5 +1,5 @@
 """
-File: pair_stream_calculate.py
+File: homography_alignment/pair_stream_calculate.py
 Author: Takao Kakegawa
 Date: 2024
 Description: Script is to enable streaming of the created/saved pair images.

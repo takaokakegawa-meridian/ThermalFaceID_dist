@@ -1,5 +1,5 @@
 """
-File: pair_record.py
+File: homography_alignment/pair_record.py
 Author: Takao Kakegawa
 Date: 2024
 Description: Script collect RGB/Thermal image pairs as part of set up process to calibrate the 

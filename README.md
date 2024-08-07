@@ -12,7 +12,7 @@ In order to use this, there are a few things to set up. Firstly, you will need t
 - Camera stand/mount
 - 3D printed board for this set up (provided file)
 
-For this set up, we have generated a custom board to mount both the visual/thermal cameras with their boards. This board can be 3D-printed using the file: **[ENTER FILENAME HERE]**. The board is to be mounted on the camera stand.
+For this set up, we have generated a custom board to mount both the visual/thermal cameras with their boards. This board can be 3D-printed using the file: `3dmountprint.stl`. The board is to be mounted on the camera stand.
 
 
 <p align="center">
@@ -100,6 +100,8 @@ From the root directory, i.e. in the `ThermalFaceID_dist` directory, run `python
 <p align="center">
     <i>Ref 6: Visual interface from main.py script.</i>
 </p>
+
+The default arguments are loaded in through the `config.toml` file. This is because there are several common hyperparameter arguments that can be tuned, and have overlapped usage across multiple scripts. For convenience, if you want to change any of the hyperparameters, you can either do it manually via the argument commads within the command-line terminal, or change the .toml file. The hyperparameters for tuning the model, camera, etc. are under the `"tool"` key.
 
 
 # Miscellaneous scripts:
