@@ -1,5 +1,5 @@
 """
-File: main.py
+File: val_collect.py
 Author: Takao Kakegawa
 Date: 2024
 Description: Main script to run to observe plain CV window demonstrating Facial Anti-Spoofing with thermal data.
@@ -7,8 +7,10 @@ Description: Main script to run to observe plain CV window demonstrating Facial 
 
 import ast
 import argparse
-import joblib
 import os
+import shutil
+import sys
+sys.path.append(os.getcwd())
 import json
 import tomllib
 import warnings
@@ -16,8 +18,7 @@ warnings.filterwarnings("ignore")
 
 import numpy as np
 import cv2 as cv
-import torch
-from Depth_FCN_2.FCN import DepthBasedFCN      # FCN2 model imports
+from utils import create_folders
 from homography_alignment.homography import homographic_blend
 
 # Mediaipipe facial landmark imports
@@ -31,8 +32,8 @@ from thermalfaceid.stark import STARKFilter
 
 # modularised imports
 from thermalfaceid.processing import *
+from thermalfaceid.inference import frame_inference_onlylandmarker
 from thermalfaceid.utils import *
-from thermalfaceid.inference import *
 
 
 rotation_map = {'90': cv.ROTATE_90_CLOCKWISE,
@@ -45,21 +46,23 @@ with open("config.toml", "rb") as f:
 if __name__ == "__main__":
   #### Load in config default params
   default_params = config['tool']['model_params']
-  
+
   #### Create the argument parser
   parser = argparse.ArgumentParser(description='Argument Parser for Webcam ID and Rotation')
   parser.add_argument('-webcam_id', type=int, default=default_params['webcam_id'], help='Webcam ID if default detected webcam is not Logitech cam')
   parser.add_argument('-rotation', type=int, default=default_params['rotation'], help='Rotation for webcam if needed')
   parser.add_argument('-height_ratio', type=float, default=default_params['height_ratio'], help='minimum height ratio of frame for face to occupy')
   parser.add_argument('-face_confidence', type=int, default=default_params['face_confidence'], help='facial landmark detection confidence threshold')
-  parser.add_argument('-liveness_threshold', type=float, default=default_params['liveness_threshold'], help='liveness threshold')
-  parser.add_argument('-heat_threshold', type=float, default=default_params['heat_threshold'], help='thermal face variation threshold')
+  parser.add_argument('-class_arg', type=int, default=1, help='Class. 1 is real, 0 is fake/spoof.')
+
   args = parser.parse_args()
   webcam_id = args.webcam_id
   min_height_ratio = args.height_ratio
+  class_arg = args.class_arg
   rotation = rotation_map.get(str(args.rotation), None)
-  liveness_threshold = args.liveness_threshold
-  heat_threshold = args.heat_threshold
+  if class_arg not in [0, 1]:
+    print("Invalid class argument. Class should be 0 (fake) or 1 (real).")
+    sys.exit(1)
   ####
 
   #### Create FaceDetection and FaceLandmarker objects.
@@ -69,15 +72,6 @@ if __name__ == "__main__":
                                                  min_face_presence_confidence=args.face_confidence,
                                                  num_faces=1)
   landmarker = vision.FaceLandmarker.create_from_options(landmarkoptions)
-  ####
-
-  #### Load both Patch-FCN model and SVM classifiers
-  weight_root = "Depth_FCN_2/model_res"
-  model = DepthBasedFCN(3)
-  model.load_state_dict(torch.load(os.path.join(weight_root,"best_weights.pt"),
-                        map_location=torch.device('cpu')))
-  model.eval()
-  SVMclf = joblib.load(os.path.join(weight_root, 'svmclf.pkl'))
   ####
 
   #### start visual webcam and SenXor thermal cam
@@ -116,11 +110,20 @@ if __name__ == "__main__":
 
   empty_frame = np.zeros((120,120,3))
 
+  ret, rgbframe = cam.read()
+  data, _ = mi48.read()
+
+  #### forming validation data directory
+  if ret and data is not None:
+    desktop_path = os.path.join(os.path.expanduser('~'), 'Desktop')
+    target_dir = os.path.join(desktop_path, 'thermalfaceid_val')
+    create_folders(target_dir)
+  ####
+
   while True:
     pred = None
     ret, rgbframe = cam.read()
     data, _ = mi48.read()
-    winTitle = "NO DETECTION"
     if ret and data is not None:
       rgbimg = np.fliplr(cv.rotate(rgbframe, rotation))[125:605,:]
       rgbimg = homographic_blend(rgbimg.copy(), empty_frame, local_M_120120)[:,:]    # HOMOGRAPHY STEP HERE TO PROJECT RGB ONTO THERMAL PLANE
@@ -170,10 +173,8 @@ if __name__ == "__main__":
             color = (0, 0, 255)
             winTitle = "SPOOF"
           rgbimgbig = cv.rectangle(rgbimgbig, (xminbig, yminbig), (xmaxbig, ymaxbig), color, 1)
-          # print(f"First threshold passed. Second threshold{'' if pred else ' NOT'} passed.")
         else:
           rgbimgbig = cv.rectangle(rgbimgbig, (xminbig, yminbig), (xmaxbig, ymaxbig), (0, 0, 255), 1)
-          # print("NO threshold passed")
 
       else:
         rgbimgbig = cv.resize(rgbimg, dsize=None, fx=RSCALE, fy=RSCALE)
@@ -181,8 +182,6 @@ if __name__ == "__main__":
 
     cv.imshow(winName, np.vstack((rgbimgbig, thermalimgbig)))
     cv.setWindowTitle(winName, winTitle)
-      # end = time.time()
-      # print(f"FPS: {total_frames/(end-start)}")   # tracking FPS deterioration/stability
 
     key = cv.waitKey(1)
     if key == ord("q"):
@@ -194,8 +193,6 @@ if __name__ == "__main__":
         key = cv.waitKey(1) & 0xFF
         if key == ord("r"):
           print("Resumed...")
-          # total_frames = 0
-          # start = time.time()
           break
 
   cv.destroyAllWindows()

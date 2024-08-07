@@ -19,11 +19,11 @@ import argparse
 from senxor.utils import get_default_outfile, remap
 from senxor.filters import RollingAverageFilter
 from senxor.display import cv_render
-from stark import STARKFilter
 
 # modularised imports
-from processing import process_thermal_frame
-from utils import config_mi48
+from thermalfaceid.stark import STARKFilter
+from thermalfaceid.processing import process_thermal_frame
+from thermalfaceid.utils import config_mi48
 
 
 rotation_map = {'90': cv.ROTATE_90_CLOCKWISE,
@@ -101,7 +101,6 @@ if __name__ == "__main__":
                 cv.imshow("Visual Image",rgbimg)
                 cv.imshow("Thermal Image",cv.resize(thermalimg, dsize=rgbimg.shape[:2],
                                                     interpolation=cv.INTER_CUBIC))
-                print(f"shapes: {thermalimg.shape}, {rgbimg.shape}")
                 
                 if save_imgs == True:
                     savename = get_default_outfile()
