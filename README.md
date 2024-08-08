@@ -114,5 +114,9 @@ In the `/bin` folder, there are two scripts that are used for exploratory purpos
 
 Both scripts have the optional input arguments `-webcam_id`, `-rotation`, `-confidence`, `-height_ratio` that are the same as the input arguments from main.py.
 
+
+# Generating test statistics on self-collected unseen test data:
+**[TO DO]**
+
 # Contact:
 If there are any questions, feel free to contact me at takao.kakegawa@meridianinno.com
