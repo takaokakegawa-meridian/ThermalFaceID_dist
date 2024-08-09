@@ -74,7 +74,7 @@ if __name__ == "__main__":
   weight_root = "Depth_FCN_2/model_res"
   model = DepthBasedFCN(3)
   model.load_state_dict(torch.load(os.path.join(weight_root,"best_weights.pt"),
-                        map_location=torch.device('cpu')))
+                        map_location=torch.device('cpu'), weights_only=True))
   model.eval()
   SVMclf = joblib.load(os.path.join(weight_root, 'svmclf.pkl'))
   ####

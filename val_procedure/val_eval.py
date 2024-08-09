@@ -5,18 +5,15 @@ Date: 2024
 Description: Main script to run to observe plain CV window demonstrating Facial Anti-Spoofing with thermal data.
 """
 
-import ast
-import argparse
 import joblib
 import os
 import sys
 sys.path.append(os.getcwd())
-import json
+# import json
 import tomllib
 import warnings
 warnings.filterwarnings("ignore")
 
-import numpy as np
 import cv2 as cv
 import torch
 from Depth_FCN_2.FCN import DepthBasedFCN      # FCN2 model imports
@@ -27,10 +24,6 @@ from thermalfaceid.utils import *
 from thermalfaceid.inference import *
 from utils import *
 
-
-rotation_map = {'90': cv.ROTATE_90_CLOCKWISE,
-                '-90': cv.ROTATE_90_COUNTERCLOCKWISE,
-                '180': cv.ROTATE_180}
 
 with open("config.toml", "rb") as f:
   config = tomllib.load(f)
@@ -55,7 +48,7 @@ if __name__ == "__main__":
     target_dir = os.path.join(desktop_path, 'thermalfaceid_val')
 
     if check_structure(target_dir):
-       print("Validation dataset folder structure validated ...")
+       print("[CHECK] Validation dataset folder structure validated ...")
     else:
        sys.exit("incorrect structure. Please check. Exiting script.")
 
@@ -67,8 +60,6 @@ if __name__ == "__main__":
     fake_filenames = get_common_filenames(fake_dir)
     print(f"Number of 'fake' labeled datapoints: {len(fake_filenames)}")
 
-    print(real_filenames[:3])
-
     if not (check_common_files(real_filenames, os.path.join(real_dir, "thermal"),
                           os.path.join(real_dir, "rgb"), os.path.join(real_dir, "landmarkcoords")) and \
             check_common_files(fake_filenames, os.path.join(fake_dir, "thermal"),
@@ -76,6 +67,30 @@ if __name__ == "__main__":
        print("common file-presence check failed. Exiting script.")
        sys.exit()
     else:
-       print("common file-presence check passed ...")
+       print("[CHECK] common file-presence check passed ...")
 
+    print("[STAGE] Evaluating real-labelled data ...")
+    real_results_ind, real_results_stats = get_results(real_filenames, os.path.join(real_dir, "thermal"),
+                                                       os.path.join(real_dir, "rgb"), os.path.join(real_dir, "landmarkcoords"),
+                                                       1, model, SVMclf)
     
+    print("Finished valuating real-labelled data ...")
+    print("[STAGE] Evaluating fake-labelled data ...")
+    fake_results_ind, fake_results_stats = get_results(fake_filenames, os.path.join(fake_dir, "thermal"),
+                                                       os.path.join(fake_dir, "rgb"), os.path.join(fake_dir, "landmarkcoords"),
+                                                       0, model, SVMclf)
+    print("Finished evaluating fake-labelled data ...")
+
+    real_results_ind.update(fake_results_ind)
+    real_results_stats.update(fake_results_stats)
+
+    d = {"individual_results": real_results_ind}
+
+    d["summary_results"] = get_summary_statistics(real_results_stats)
+
+    savepath = os.path.join(target_dir, "summary_results.json")
+    with open(savepath, "w") as f:
+       json.dump(d, f)
+       print(f"[STATUS] results saved at {savepath}")
+
+    sys.exit()

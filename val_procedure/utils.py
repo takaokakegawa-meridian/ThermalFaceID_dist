@@ -15,10 +15,10 @@ from typing import List
 
 import numpy as np
 import cv2 as cv
+from sklearn.pipeline import Pipeline
+from Depth_FCN_2.FCN import DepthBasedFCN
+from thermalfaceid.inference import FC2_predict
 from senxor.utils import get_default_outfile
-from thermalfaceid.processing import convert_bgr_cnn_input
-import torch
-from torch.utils.data import Dataset
 
 
 def check_structure(folder: str) -> bool:
@@ -132,60 +132,58 @@ def check_common_files(filenames: List[str], thermal_root: str, rgb_root: str,
     print("One or more paths not found")
     return False
 
-# class val_Dataset(Dataset):
-#   """Custom torch.Dataset class to acccomodate validation data collected for FCN model validation evaluation.
-#   """
 
-#   def __init__(self, thermal_root: str, rgb_root: str, landmark_coords_root: str,
-#     filenames: List[str]):
+def get_results(filenames: List[str], thermal_root: str, rgb_root: str, landmark_coords_root: str,
+                actual_lab: int, NN_model: DepthBasedFCN, SVMclf: Pipeline):   # need to specify output types later
+  
+  if len(filenames) == 0:
+    return {}
+  labelmapping = {(1,1): "true pos", (0,0): "true neg",(1,0): "false pos", (0,1): "false neg"}
+  d = {}
 
-#     try:
-#       # directory for HSV+YCrCb input images.
-#       self.rgb_root = rgb_root
-#       self.thermal_root = thermal_root
-#       self.landmark_coords_root = landmark_coords_root
-#       self.filenames = filenames
+  if actual_lab == 1:
+    tp, fn = 0, 0
+  elif actual_lab == 0:
+    tn, fp = 0, 0
 
-#       thermalfileinter = set([i+"json" for i in self.filenames]).issubset(set([i for i in os.listdir(self.thermal_root) if i.endswith(".json")]))
-#       rgbfileinter = set([i+"png" for i in self.filenames]).issubset(set([i for i in os.listdir(self.rgb_root) if i.endswith(".png")]))
-#       landmarkfileinter = set([i+"json" for i in self.filenames]).issubset(set([i for i in os.listdir(self.landmark_coords_root) if i.endswith(".json")]))
-#       assert(thermalfileinter and rgbfileinter and landmarkfileinter), "some files not found in rgb, thermal, landmarkcoords root dirs."
+  for filename in filenames:
+    with open(os.path.join(thermal_root, filename+"json"), "r") as f:
+      thermalcrop = np.array(json.load(f)['thermalcrop'])
 
-#     except Exception as e:
-#       print("one or more paths not found")
+    with open(os.path.join(landmark_coords_root, filename+"json"), "r") as f:
+      dat = json.load(f)
+      x_coords, y_coords = np.array(dat['x_coords']).astype(int), np.array(dat['y_coords']).astype(int)
+      landmarkcoords = (x_coords, y_coords)
+
+    rgbimg = cv.imread(os.path.join(rgb_root, filename+"png"))
+
+    res = 1 if FC2_predict(thermalcrop, rgbimg, landmarkcoords, NN_model, SVMclf) else 0
+    labelmap = labelmapping[(res, actual_lab)]
+    d[filename] = {"actual": actual_lab, "predicted": res, "label": labelmap}
+
+    if labelmap == "true pos":
+      tp += 1
+    elif labelmap == "true neg":
+      tn += 1
+    elif labelmap == "false pos":
+      fp += 1
+    elif labelmap == "false neg":
+      fn += 1
+  
+  summ = {"true pos": tp, "false neg": fn} if actual_lab == 1 else {"true neg": tn, "false pos": fp}
+  return d, summ
 
 
-#   def __len__(self):
-#     return len(self.filenames)
-
-
-#   def __getitem__(self, idx: int) -> tuple[torch.Tensor, torch.Tensor, tuple[int, ...], torch.Tensor] | None:
-#     """__getitem__ method to get desired inputs for model training and evaluation.
-#     Args:
-#     idx (int): index of data to get.
-#     Returns:
-#     tuple[torch.Tensor, torch.Tensor, tuple[int, ...], torch.Tensor]: returns actual thermal landmark 
-#     values, 3-channel visual image, the visual image dimensions, and the landmarks coordinates for the
-#     visual image.
-#     """
-#     try:
-#       fn = self.filenames[idx]
-#     except IndexError:
-#       print(f"{idx} is an invalid index")
-#       return
-
-#     with open(os.path.join(self.thermal_root, fn+"json"), "r") as f:
-#       thermal_vals = np.array(json.load(f)['thermalcrop'])
-
-#     with open(os.path.join(self.landmark_coords_root, fn+"json"), "r") as f:
-#       dat = json.load(f)
-#       x_coords, y_coords = np.array(dat['x_coords']).astype(int), np.array(dat['y_coords']).astype(int)
-
-#     rgb_img = cv.imread(os.path.join(self.rgb_root, self.file_names[idx]))
-#     rgb_shape = rgb_img.shape[:2]
-#     thermal_vals = torch.from_numpy(thermal_vals).float()
-#     rgb_img = torch.from_numpy(rgb_img).permute(2, 0, 1).float()
-#     landmarks = np.array(self.landmark_coords[self.file_names[idx]]["rgb"])
-#     landmarks = torch.from_numpy(landmarks).int()
-#     assert landmarks.shape[0] == thermal_vals.shape[0], "mismatch with number of landmarks"
-#     return thermal_vals, rgb_img, rgb_shape, landmarks
+def get_summary_statistics(d: dict):
+  total = sum(d.values())
+  acc = (d["true pos"] + d["true neg"])/total
+  precision = d["true pos"]/(d["true pos"] + d["false pos"])
+  recall = d["true pos"]/(d["true pos"] + d["false neg"])
+  fpr = d["false pos"]/(d["false pos"] + d["true neg"])
+  fnr = d["false neg"]/(d["false neg"] + d["true pos"])
+  f1_score = 2 * precision * recall / (precision + recall)
+  print(f"accuracy: {acc}, precision: {precision}, recall: {recall}, f1-score: {f1_score}")
+  print(f"false-pos rate: {fpr}, false-neg rate: {fnr}")
+  summ = {"accuracy": acc, "precision": precision, "recall": recall, "false-pos rate": fpr,
+          "false-neg rate": fnr, "f1-score": f1_score}
+  return summ
