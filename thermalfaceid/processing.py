@@ -13,7 +13,7 @@ from mediapipe import solutions
 from mediapipe.framework.formats import landmark_pb2
 from mediapipe.tasks.python import vision
 
-from senxor.utils import data_to_frame
+from senxor.utils import data_to_frame, remap
 from senxor.filters import RollingAverageFilter
 from thermalfaceid.stark import STARKFilter
 
@@ -58,6 +58,42 @@ def process_thermal_frame(data: np.ndarray, ncols: int, nrows: int, minav: Rolli
   max_temp2= maxav2(np.median(sorted_frame[-5:]))
   thermal_frame = np.clip(thermal_frame, min_temp2, max_temp2)
   return thermal_frame
+
+
+def homography_contours(img: np.ndarray, pctl: int, show_cont=True, show_centroid=False) -> np.ndarray:
+  """function that gets/draws contours on input image for automated homography alignment use.
+  Args:
+      img (np.ndarray): input image.
+      pctl (int): percentile bound value [0-100]
+      show_cont (bool, optional): draw contours on output image. Defaults to True.
+      show_centroid (bool, optional): draw centroids on output image. Defaults to False.
+  Returns:
+      np.ndarray: input image with contours
+  """
+  ret = img.copy()
+  frame = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
+  thresholdbound = np.percentile(frame.flatten(), pctl)
+  _, binary = cv.threshold(frame, thresholdbound, 255, cv.THRESH_BINARY)
+  contours, _ = cv.findContours(binary, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE) # find countour
+  
+  if show_cont:
+    ret = cv.drawContours(ret, contours, -1, (0,255,0), 1)
+  
+  centroids = []
+  for contour in contours:
+    try:
+      M = cv.moments(contour)
+      centroid = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
+      centroids.append(centroid)
+    except Exception as e:
+      centroids.append(None)
+
+  if show_centroid:
+    for centroid in centroids:
+      if centroid is not None:
+        ret = cv.circle(ret, centroid, 2, (0,0,255), -1)
+
+  return ret, contours, centroids
 
 
 def draw_landmarks_on_image(rgb_image: np.ndarray, detection_result: vision.FaceLandmarkerResult) -> np.ndarray:
