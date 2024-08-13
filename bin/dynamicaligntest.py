@@ -1,5 +1,5 @@
 """
-File: justthermallandmarks.py
+File: /bin/justthermallandmarks.py
 Author: Takao Kakegawa
 Date: 2024
 Description: Main script to run to observe MediaPipe facial landmarking on just thermal image.
@@ -12,6 +12,8 @@ import ast
 import argparse
 import joblib
 import os
+import sys
+sys.path.append(os.getcwd())
 import tomllib
 import warnings
 warnings.filterwarnings("ignore")
@@ -26,7 +28,6 @@ from mediapipe.tasks.python import vision
 # SenXor imports
 from senxor.filters import RollingAverageFilter
 from thermalfaceid.stark import STARKFilter
-from senxor.display import cv_render
 from senxor.utils import remap
 
 # modularised imports
