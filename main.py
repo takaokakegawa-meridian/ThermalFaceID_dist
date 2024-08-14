@@ -9,6 +9,7 @@ import ast
 import argparse
 import joblib
 import os
+import sys
 import json
 import tomllib
 import warnings
@@ -178,8 +179,12 @@ if __name__ == "__main__":
         rgbimgbig = cv.resize(rgbimg, dsize=None, fx=RSCALE, fy=RSCALE)
         thermalimgbig = cv.resize(thermalimg, dsize=None, fx=RSCALE, fy=RSCALE)
 
-    cv.imshow(winName, np.vstack((rgbimgbig, thermalimgbig)))
-    cv.setWindowTitle(winName, winTitle)
+      cv.imshow(winName, np.vstack((rgbimgbig, thermalimgbig)))
+      cv.setWindowTitle(winName, winTitle)
+
+    else:
+      print("Webcam and/or SenXor camera not reading any data.")
+      sys.exit(0)
       # end = time.time()
       # print(f"FPS: {total_frames/(end-start)}")   # tracking FPS deterioration/stability
 
