@@ -123,7 +123,7 @@ while True:
         minav2, maxav2, frame_filter)
     thermal_frame = remap(thermal_raw[:,20:-20][:,:]).astype(np.uint8)    # thermal and projected rgb have same dimensions (113, 102)
 
-    # displaythermal = cv_render(thermal_frame, resize=thermal_frame.shape[::-1], display=False)
+
     thermalimg = np.dstack((thermal_frame, thermal_frame, thermal_frame))
     displaythermal = thermalimg.copy()
     rgbimg = (np.fliplr(cv.rotate(rgbframe, rotation))[125:605,:]).astype(np.uint8)

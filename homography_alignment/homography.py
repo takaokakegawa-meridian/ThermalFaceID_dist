@@ -6,6 +6,8 @@ Description: Script with all homography related functions
 """
 
 import os
+from collections import defaultdict
+import heapq
 import matplotlib.pyplot as plt
 import cv2 as cv
 import numpy as np
@@ -92,3 +94,78 @@ def view_display(thermal_root: str, webcam_root: str, filename: str) -> None:
     ax[0].set_title(filename)
     ax[1].set_title(filename)
     plt.show()
+
+
+def euclid_distance(x1: float, y1: float, x2: float, y2: float) -> float:
+  """calculate euclidean distance between two points (x1, y1) and (x2, y2)
+  Args:
+    x1 (float): x-coord of point p1
+    y1 (float): y-coord of point p1
+    x2 (float): x-coord of point p2
+    y2 (float): y-coord of point p2
+  Returns:
+    float: euclidean distance between two points
+  """
+  return np.sqrt((x1-x2)**2 + (y1-y2)**2)
+
+
+def closest_point(target, idxs_kp_lst):
+  if len(idxs_kp_lst) < 1:
+    return None
+  
+  heap = []
+
+  for idx_kp in idxs_kp_lst:
+    dist = euclid_distance(target[0], target[1], idx_kp[1].pt[0], idx_kp[1].pt[1])
+    heapq.heappush(heap, (dist, idx_kp))
+
+  return heapq.heappop(heap)[1]
+
+
+def get_contour_keypoints_descriptors(kps, deses, contours, centroids):
+    assert len(kps) == len(deses), "keypoint and descriptor lists must be same length."
+    kp_d = defaultdict(list)
+
+    for kp_idx, kp in enumerate(kps):    # keep track of kp_idx to get corresponding descriptor
+        for c_idx, c in enumerate(contours):    # keep track of c_idx to get corresponding centroid
+            if cv.pointPolygonTest(c, (int(kp.pt[0]), int(kp.pt[1])), False) == 1:
+                kp_d[c_idx].append((kp_idx, kp))
+
+    kp_final = []
+
+    for c_idx, c in enumerate(contours):
+        c_res = closest_point(centroids[c_idx], kp_d[c_idx])
+        kp_final.append(c_res)
+    
+    return [i[1] for i in kp_final if i is not None], deses[[i[0] for i in kp_final if i is not None]]
+
+
+def binarize_img(img: np.ndarray, revert=False, blockSize=5, C=6.) -> np.ndarray:
+    """function to binarize image using adaptive-mean thresholding
+    Args:
+        img (np.ndarray): input 3-channel img
+        revert (bool, optional): True is you want to revert grayscale. Defaults to False.
+        blockSize (int, optional): blockSize parameter for cv.AdaptiveThreshold. Defaults to 5.
+        C (float, optional): blockSize parameter for cv.AdaptiveThreshold. Defaults to 6.
+    Returns:
+        np.ndarray: _description_
+    """
+    res = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
+    adaptive_threshold_mean = cv.adaptiveThreshold(res, 255, cv.ADAPTIVE_THRESH_MEAN_C,
+                                                   cv.THRESH_BINARY, blockSize, C)
+
+    if revert:
+        return 255 - adaptive_threshold_mean
+
+    return adaptive_threshold_mean
+
+
+def get_flann_matches(flann, des1, des2, MIN_MATCH_COUNT, k=2):
+    matches = flann.knnMatch(des1, des2, k)
+    good = []
+    
+    for m,n in matches:
+        if m.distance < 0.7*n.distance:
+            good.append(m)
+
+    return good if len(good) >= MIN_MATCH_COUNT else None

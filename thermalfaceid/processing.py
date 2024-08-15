@@ -5,6 +5,7 @@ Date: 2024
 Description: Script with all visual/thermal image processing related functions
 """
 
+from typing import Tuple
 import numpy as np
 import cv2 as cv
 
@@ -60,23 +61,27 @@ def process_thermal_frame(data: np.ndarray, ncols: int, nrows: int, minav: Rolli
   return thermal_frame
 
 
-def homography_contours(img: np.ndarray, pctl: int, show_cont=True, show_centroid=False) -> np.ndarray:
+def homography_contours(img: np.ndarray, pctl: int, x1: int, y1: int, x2: int, y2: int,
+                        show_cont=True, show_centroid=False, minPct=0.004) -> Tuple[np.ndarray, list, list]:
   """function that gets/draws contours on input image for automated homography alignment use.
   Args:
       img (np.ndarray): input image.
       pctl (int): percentile bound value [0-100]
       show_cont (bool, optional): draw contours on output image. Defaults to True.
       show_centroid (bool, optional): draw centroids on output image. Defaults to False.
+      minPct (float, optional): min percent area size of entire frame for contour selection. Defaults to 0.004.
   Returns:
-      np.ndarray: input image with contours
+      Tuple[np.ndarray, list, list]: Tuple containing the input image, contours, and centroids.
   """
   ret = img.copy()
   frame = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
   thresholdbound = np.percentile(frame.flatten(), pctl)
   _, binary = cv.threshold(frame, thresholdbound, 255, cv.THRESH_BINARY)
   contours, _ = cv.findContours(binary, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE) # find countour
-  
-  if show_cont:
+  minArea = minPct * frame.shape[1] * frame.shape[0]
+  contours = [c for c in contours if cv.contourArea(c) > minArea]
+
+  if show_cont and len(contours) > 0:
     ret = cv.drawContours(ret, contours, -1, (0,255,0), 1)
   
   centroids = []
@@ -84,6 +89,7 @@ def homography_contours(img: np.ndarray, pctl: int, show_cont=True, show_centroi
     try:
       M = cv.moments(contour)
       centroid = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
+      # centroid = cv.KeyPoint(centroid[0], centroid[1], np.sqrt(4*M["m00"]/np.pi))
       centroids.append(centroid)
     except Exception as e:
       centroids.append(None)

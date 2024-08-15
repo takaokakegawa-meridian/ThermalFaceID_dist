@@ -1,8 +1,9 @@
 """
-File: /bin/justthermallandmarks.py
+File: /bin/dynamicaligntest.py
 Author: Takao Kakegawa
 Date: 2024
-Description: Main script to run to observe MediaPipe facial landmarking on just thermal image.
+Description: Main script to run to observe contour/centroids on thermal/visual independently
+             to potentially match for homography calibration.
 """
 
 ### things to explore:
@@ -10,7 +11,6 @@ Description: Main script to run to observe MediaPipe facial landmarking on just 
 
 import ast
 import argparse
-import joblib
 import os
 import sys
 sys.path.append(os.getcwd())
@@ -92,12 +92,9 @@ stark_params['lm_ks'] = ast.literal_eval(stark_params['lm_ks'])
 frame_filter = STARKFilter(stark_params)
 ####
 
-#### HOMOGRAPHY MATRIX HERE:
-
 RSCALE = 2
+
 ####
-#   winName = "Display"
-#   cv.namedWindow(winName)
 cv.namedWindow("Thermal")
 cv.namedWindow("Visual")
 
@@ -115,7 +112,7 @@ while True:
     thermal_frame = remap(thermal_raw[:,20:-20][:,:]).astype(np.uint8)    # thermal and projected rgb have same dimensions (113, 102)
     thermalimg = np.dstack((thermal_frame, thermal_frame, thermal_frame))
     rgbimg = (np.fliplr(cv.rotate(rgbframe, rotation))[125:605,:]).astype(np.uint8)
-    thermalimg, th_contours, th_centroids = homography_contours(thermalimg, 95, show_centroid=True)
+    thermalimg, th_contours, th_centroids = homography_contours(thermalimg, 95, show_centroid=True, minPct=0.0005)
     rgbimg, rgb_contours, rgb_centroids = homography_contours(rgbimg, 85, show_centroid=True)
 
     cv.imshow("Thermal", thermalimg)

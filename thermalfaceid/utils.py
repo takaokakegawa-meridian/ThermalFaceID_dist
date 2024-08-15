@@ -32,14 +32,14 @@ def config_mi48(params: dict) -> MI48:
 def euclid_distance(x1: float, y1: float, x2: float, y2: float) -> float:
   """calculate euclidean distance between two points (x1, y1) and (x2, y2)
   Args:
-    x1 (int): x-coord of point p1
-    y1 (int): y-coord of point p1
-    x2 (int): x-coord of point p2
-    y2 (int): y-coord of point p2
+    x1 (float): x-coord of point p1
+    y1 (float): y-coord of point p1
+    x2 (float): x-coord of point p2
+    y2 (float): y-coord of point p2
   Returns:
     float: euclidean distance between two points
   """
-  return ((x1-x2)**2 + (y1-y2)**2) ** 0.5
+  return np.sqrt((x1-x2)**2 + (y1-y2)**2)
 
 
 def calculate_gamma(x_coords: np.ndarray, y_coords: np.ndarray, thermalcrop: np.ndarray) -> float:
