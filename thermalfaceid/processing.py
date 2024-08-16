@@ -78,28 +78,40 @@ def homography_contours(img: np.ndarray, pctl: int, x1: int, y1: int, x2: int, y
   thresholdbound = np.percentile(frame.flatten(), pctl)
   _, binary = cv.threshold(frame, thresholdbound, 255, cv.THRESH_BINARY)
   contours, _ = cv.findContours(binary, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE) # find countour
-  minArea = minPct * frame.shape[1] * frame.shape[0]
-  contours = [c for c in contours if cv.contourArea(c) > minArea]
-
-  if show_cont and len(contours) > 0:
-    ret = cv.drawContours(ret, contours, -1, (0,255,0), 1)
   
+  if len(contours) < 1:
+    return ret, [], []
+  
+  minArea = minPct * frame.shape[1] * frame.shape[0]
+  contours_f = []
   centroids = []
-  for contour in contours:
-    try:
-      M = cv.moments(contour)
-      centroid = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
-      # centroid = cv.KeyPoint(centroid[0], centroid[1], np.sqrt(4*M["m00"]/np.pi))
-      centroids.append(centroid)
-    except Exception as e:
-      centroids.append(None)
+
+  for c in contours:
+    if cv.contourArea(c) > minArea:
+      extLeft = np.min(c[:, :, 0])
+      extRight = np.max(c[:, :, 0])
+      extTop = np.min(c[:,:,1])
+      extBot = np.max(c[:, :, 1])
+
+      if extLeft >= x1 and extRight <= x2 and extTop >= y1 and extBot <= y2:
+        contours_f.append(c)
+        try:
+          M = cv.moments(c)
+          centroid = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
+          # centroid = cv.KeyPoint(centroid[0], centroid[1], np.sqrt(4*M["m00"]/np.pi))
+          centroids.append(centroid)
+        except Exception as e:
+          centroids.append(None)
+
+  if show_cont and len(contours_f) > 0:
+    ret = cv.drawContours(ret, contours_f, -1, (0,255,0), 1)
 
   if show_centroid:
     for centroid in centroids:
       if centroid is not None:
         ret = cv.circle(ret, centroid, 2, (0,0,255), -1)
 
-  return ret, contours, centroids
+  return ret, contours_f, centroids
 
 
 def draw_landmarks_on_image(rgb_image: np.ndarray, detection_result: vision.FaceLandmarkerResult) -> np.ndarray:

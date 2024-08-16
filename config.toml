@@ -38,3 +38,13 @@ lm_ks = "(3,3)"
 lm_ad = 6
 alpha = 2.0
 beta = 2.0
+
+[tool.homography_align_params]
+rgb_x1 = 10
+rgb_y1 = 30
+rgb_x2 = 470
+rgb_y2 = 360
+th_x1 = 2
+th_y1 = 8
+th_x2 = 113
+th_y2 = 96
