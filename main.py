@@ -102,12 +102,11 @@ if __name__ == "__main__":
   ####
 
   #### HOMOGRAPHY MATRIX HERE:
-  # with open('homography_alignment/homographymatrix.json', "r") as f:
-  #   local_M_120120 = json.load(f)
-  #   local_M_120120 = np.array(local_M_120120['matrix']).astype(np.float64)
-  local_M_120120 = np.array([[ 2.88807358e-01,  4.71680005e-02, -1.23089966e+01],
-                             [-6.03625342e-03,  3.35243264e-01, -1.77408347e+00],
-                             [-4.91781884e-06,  7.87303985e-04,  1.00000000e+00]])
+  with open(os.path.join("Depth_FCN_2/model_res", "automatic_M.json"), "r") as f:
+    local_M_120120 = np.array(json.load(f)['M'])
+  # local_M_120120 = np.array([[ 2.88807358e-01,  4.71680005e-02, -1.23089966e+01],
+  #                            [-6.03625342e-03,  3.35243264e-01, -1.77408347e+00],
+  #                            [-4.91781884e-06,  7.87303985e-04,  1.00000000e+00]])
   
   RSCALE = 2
   ####

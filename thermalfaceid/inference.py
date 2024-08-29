@@ -36,10 +36,8 @@ def FC2_predict(thermalcrop: np.ndarray, rgbimg: np.ndarray, landmarkcoords: tup
   modelinput = convert_bgr_cnn_input(rgbimg)
   inputimg = torch.from_numpy(modelinput).permute(2, 0, 1).float()
   output = NN_model(inputimg).unsqueeze(dim=0)
-  print("model output shape: ", output.shape)
   output_resized = F.interpolate(output, size=thermalcrop.shape,
                                   mode='bicubic').squeeze()
-  print("output_resized.shape: ", output_resized.shape)
   output_vals = output_resized[y_coords, x_coords].detach().numpy()
   thactual = thermalcrop[y_coords, x_coords]
   svminput = (output_vals - thactual) ** 2
