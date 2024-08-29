@@ -5,6 +5,7 @@ Date: 2024
 Description: Script with all visual/thermal image processing related functions
 """
 
+from typing import Tuple
 import numpy as np
 import cv2 as cv
 
@@ -13,7 +14,7 @@ from mediapipe import solutions
 from mediapipe.framework.formats import landmark_pb2
 from mediapipe.tasks.python import vision
 
-from senxor.utils import data_to_frame
+from senxor.utils import data_to_frame, remap
 from senxor.filters import RollingAverageFilter
 from thermalfaceid.stark import STARKFilter
 
@@ -58,6 +59,59 @@ def process_thermal_frame(data: np.ndarray, ncols: int, nrows: int, minav: Rolli
   max_temp2= maxav2(np.median(sorted_frame[-5:]))
   thermal_frame = np.clip(thermal_frame, min_temp2, max_temp2)
   return thermal_frame
+
+
+def homography_contours(img: np.ndarray, pctl: int, x1: int, y1: int, x2: int, y2: int,
+                        show_cont=True, show_centroid=False, minPct=0.004) -> Tuple[np.ndarray, list, list]:
+  """function that gets/draws contours on input image for automated homography alignment use.
+  Args:
+      img (np.ndarray): input image.
+      pctl (int): percentile bound value [0-100]
+      show_cont (bool, optional): draw contours on output image. Defaults to True.
+      show_centroid (bool, optional): draw centroids on output image. Defaults to False.
+      minPct (float, optional): min percent area size of entire frame for contour selection. Defaults to 0.004.
+  Returns:
+      Tuple[np.ndarray, list, list]: Tuple containing the input image, contours, and centroids.
+  """
+  ret = img.copy()
+  frame = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
+  thresholdbound = np.percentile(frame.flatten(), pctl)
+  _, binary = cv.threshold(frame, thresholdbound, 255, cv.THRESH_BINARY)
+  contours, _ = cv.findContours(binary, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE) # find countour
+  
+  if len(contours) < 1:
+    return ret, [], []
+  
+  minArea = minPct * frame.shape[1] * frame.shape[0]
+  contours_f = []
+  centroids = []
+
+  for c in contours:
+    if cv.contourArea(c) > minArea:
+      extLeft = np.min(c[:, :, 0])
+      extRight = np.max(c[:, :, 0])
+      extTop = np.min(c[:,:,1])
+      extBot = np.max(c[:, :, 1])
+
+      if extLeft >= x1 and extRight <= x2 and extTop >= y1 and extBot <= y2:
+        contours_f.append(c)
+        try:
+          M = cv.moments(c)
+          centroid = (int(M["m10"] / M["m00"]), int(M["m01"] / M["m00"]))
+          # centroid = cv.KeyPoint(centroid[0], centroid[1], np.sqrt(4*M["m00"]/np.pi))
+          centroids.append(centroid)
+        except Exception as e:
+          centroids.append(None)
+
+  if show_cont and len(contours_f) > 0:
+    ret = cv.drawContours(ret, contours_f, -1, (0,255,0), 1)
+
+  if show_centroid:
+    for centroid in centroids:
+      if centroid is not None:
+        ret = cv.circle(ret, centroid, 2, (0,0,255), -1)
+
+  return ret, contours_f, centroids
 
 
 def draw_landmarks_on_image(rgb_image: np.ndarray, detection_result: vision.FaceLandmarkerResult) -> np.ndarray:

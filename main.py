@@ -9,6 +9,7 @@ import ast
 import argparse
 import joblib
 import os
+import sys
 import json
 import tomllib
 import warnings
@@ -74,7 +75,7 @@ if __name__ == "__main__":
   weight_root = "Depth_FCN_2/model_res"
   model = DepthBasedFCN(3)
   model.load_state_dict(torch.load(os.path.join(weight_root,"best_weights.pt"),
-                        map_location=torch.device('cpu')))
+                        map_location=torch.device('cpu'), weights_only=True))
   model.eval()
   SVMclf = joblib.load(os.path.join(weight_root, 'svmclf.pkl'))
   ####
@@ -101,12 +102,11 @@ if __name__ == "__main__":
   ####
 
   #### HOMOGRAPHY MATRIX HERE:
-  # with open('homography_alignment/homographymatrix.json', "r") as f:
-  #   local_M_120120 = json.load(f)
-  #   local_M_120120 = np.array(local_M_120120['matrix']).astype(np.float64)
-  local_M_120120 = np.array([[ 2.88807358e-01,  4.71680005e-02, -1.23089966e+01],
-                             [-6.03625342e-03,  3.35243264e-01, -1.77408347e+00],
-                             [-4.91781884e-06,  7.87303985e-04,  1.00000000e+00]])
+  with open(os.path.join("Depth_FCN_2/model_res", "automatic_M.json"), "r") as f:
+    local_M_120120 = np.array(json.load(f)['M'])
+  # local_M_120120 = np.array([[ 2.88807358e-01,  4.71680005e-02, -1.23089966e+01],
+  #                            [-6.03625342e-03,  3.35243264e-01, -1.77408347e+00],
+  #                            [-4.91781884e-06,  7.87303985e-04,  1.00000000e+00]])
   
   RSCALE = 2
   ####
@@ -178,8 +178,12 @@ if __name__ == "__main__":
         rgbimgbig = cv.resize(rgbimg, dsize=None, fx=RSCALE, fy=RSCALE)
         thermalimgbig = cv.resize(thermalimg, dsize=None, fx=RSCALE, fy=RSCALE)
 
-    cv.imshow(winName, np.vstack((rgbimgbig, thermalimgbig)))
-    cv.setWindowTitle(winName, winTitle)
+      cv.imshow(winName, np.vstack((rgbimgbig, thermalimgbig)))
+      cv.setWindowTitle(winName, winTitle)
+
+    else:
+      print("Webcam and/or SenXor camera not reading any data.")
+      sys.exit(0)
       # end = time.time()
       # print(f"FPS: {total_frames/(end-start)}")   # tracking FPS deterioration/stability
 

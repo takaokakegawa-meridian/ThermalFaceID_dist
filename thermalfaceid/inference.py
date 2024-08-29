@@ -45,6 +45,32 @@ def FC2_predict(thermalcrop: np.ndarray, rgbimg: np.ndarray, landmarkcoords: tup
   return True if pred == 1 else False
 
 
+def FC2_onnxpredict(thermalcrop: np.ndarray, rgbimg: np.ndarray, landmarkcoords: tuple,
+                ort_session, SVMclf: Pipeline) -> bool:
+  """Execute FCN Depth Based model end-to-end inference process for current frame.
+  Args:
+    thermalcrop (np.ndarray): 2D thermal frame cropped to face bounds.
+    rgbimg (np.ndarray): 3D numpy array representing face image in BGR format.
+    landmarkcoords (tuple): tuple of x/y coordinate lists for the facial landmark coordinates
+    ort_session: InferenceSession for onnxruntime with the loaded model.
+    SVMclf (Pipeline): sklearn pipeline that applied SVM to NN_model output for binary output
+  Returns:
+    bool: True/False output is face is real or not.
+  """
+  x_coords, y_coords = landmarkcoords
+  modelinput = convert_bgr_cnn_input(rgbimg)
+  onnx_input = np.expand_dims(np.moveaxis(modelinput, -1, 0), axis=0).astype(np.float32)
+  ort_inputs = {ort_session.get_inputs()[0].name: onnx_input}
+  output = torch.from_numpy(ort_session.run(None, ort_inputs)[0])
+  output_resized = F.interpolate(output, size=thermalcrop.shape,
+                                 mode='bicubic').squeeze()
+  output_vals = output_resized[y_coords, x_coords].detach().numpy()
+  thactual = thermalcrop[y_coords, x_coords]
+  svminput = (output_vals - thactual) ** 2
+  pred = SVMclf.predict(svminput.reshape(1,-1))[0]
+  return True if pred == 1 else False
+
+
 ###### INFERENCE DRAWING BOUNDS ONLY WITH LANDMARKER
 def frame_inference_onlylandmarker(rgbimg: np.ndarray, thermal_frame: np.ndarray, landmarker: vision.FaceLandmarker,
                                    min_height_ratio: float, colormap: str = 'bone') -> \
